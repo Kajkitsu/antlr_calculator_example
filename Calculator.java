@@ -9,7 +9,7 @@ public class Calculator extends CalculatorBaseListener {
     private final Stack<Integer> stack = new Stack<>();
 
     public Integer getResult() {
-        return stack.peek();
+        return stack.pop();
     }
 
 
@@ -24,51 +24,38 @@ public class Calculator extends CalculatorBaseListener {
 
     @Override
     public void exitExpression(CalculatorParser.ExpressionContext ctx) {
-        Integer left = stack.peek();
-        Integer right = stack.peek();
-
-        Integer result = calc(ctx, 0);
-        stack.push(result);
-
-        if (ctx.PLUS().size() > 0) {
-            result = left + right;
-        } else {
-            result = left - right;
+        Integer result = stack.pop();
+        for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
+            if (symbolEquals(ctx.getChild(i), CalculatorParser.PLUS)) {
+                result += stack.pop();
+            } else {
+                result -= stack.pop();
+            }
         }
         stack.push(result);
-    }
-
-    private Integer calc(CalculatorParser.ExpressionContext ctx, int i) {
-        if(ctx.getChildCount() == (i+1)) {
-            return stack.pop();
-        }
-        if(CalculatorParser.TIMES == ctx.getRuleIndex()) {
-            /////
-        }
-        CalculatorParser.TIMES == ctx.getRuleIndex()
-        ctx.getChild(i+1)()
-        if(ctx.getChild(i+1) )
-
-        return null;
     }
 
 
     @Override
     public void exitMultiplyingExpression(CalculatorParser.MultiplyingExpressionContext ctx) {
-        Integer left = stack.peek();
-        Integer right = stack.peek();
-        Integer result;
-        if (ctx.TIMES().size() > 0) {
-            result = left * right;
-        } else {
-            result = left / right;
+        Integer result = stack.pop();
+        for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
+            if (symbolEquals(ctx.getChild(i), CalculatorParser.TIMES)) {
+                result *= stack.pop();
+            } else {
+                result /= stack.pop();
+            }
         }
         stack.push(result);
     }
 
+    private boolean symbolEquals(ParseTree child, int symbol) {
+        return ((TerminalNode) child).getSymbol().getType() == symbol;
+    }
+
     @Override
     public void exitIntegralExpression(CalculatorParser.IntegralExpressionContext ctx) {
-        Integer value = Integer.valueOf(ctx.INT().getText());
+        int value = Integer.parseInt(ctx.INT().getText());
         if (ctx.MINUS() != null) {
             stack.push(-1 * value);
         } else {
