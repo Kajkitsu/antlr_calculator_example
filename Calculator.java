@@ -1,4 +1,3 @@
-import java.util.LinkedList;
 import java.util.Stack;
 
 import org.antlr.v4.runtime.*;
@@ -22,7 +21,7 @@ public class Calculator extends CalculatorBaseListener {
             }
         }
         stack.push(result);
-        System.out.println("\"" + ctx.getText() + "\" -> "+result);
+        System.out.println("Expression: \"" + ctx.getText() + "\" -> "+result);
     }
 
 
@@ -37,7 +36,7 @@ public class Calculator extends CalculatorBaseListener {
             }
         }
         stack.push(result);
-        System.out.println("\"" + ctx.getText() + "\" -> "+result);
+        System.out.println("MultiplyingExpression: \"" + ctx.getText() + "\" -> "+result);
     }
 
     private boolean symbolEquals(ParseTree child, int symbol) {
@@ -52,6 +51,7 @@ public class Calculator extends CalculatorBaseListener {
         } else {
             stack.push(value);
         }
+        System.out.println("IntegralExpression: \"" + ctx.getText() + "\" ");
     }
 
     public static void main(String[] args) throws Exception {
