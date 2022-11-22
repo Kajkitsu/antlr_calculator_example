@@ -1,6 +1,5 @@
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Stack;
-import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
@@ -10,16 +9,6 @@ public class Calculator extends CalculatorBaseListener {
 
     public Integer getResult() {
         return stack.pop();
-    }
-
-
-    @Override
-    public void exitEveryRule(ParserRuleContext ctx) {
-        System.out.print(ctx + " -> ");
-        for (int i = 0; i < ctx.getChildCount(); i++) {
-            System.out.print(ctx.getChild(i));
-        }
-        System.out.println(" : \"" + ctx.getText() + "\"");
     }
 
     @Override
@@ -33,20 +22,22 @@ public class Calculator extends CalculatorBaseListener {
             }
         }
         stack.push(result);
+        System.out.println("\"" + ctx.getText() + "\" -> "+result);
     }
 
 
     @Override
     public void exitMultiplyingExpression(CalculatorParser.MultiplyingExpressionContext ctx) {
         Integer result = stack.pop();
-        for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
+        for (int i = ctx.getChildCount() - 2; i >= 1; i = i - 2) {
             if (symbolEquals(ctx.getChild(i), CalculatorParser.TIMES)) {
-                result *= stack.pop();
+                result = stack.pop() * result;
             } else {
-                result /= stack.pop();
+                result = stack.pop() / result;
             }
         }
         stack.push(result);
+        System.out.println("\"" + ctx.getText() + "\" -> "+result);
     }
 
     private boolean symbolEquals(ParseTree child, int symbol) {
@@ -75,7 +66,7 @@ public class Calculator extends CalculatorBaseListener {
         ParseTreeWalker walker = new ParseTreeWalker();
         Calculator calculatorListener = new Calculator();
         walker.walk(calculatorListener, tree);
-        System.out.println(calculatorListener.getResult());
+        System.out.println("Result = " + calculatorListener.getResult());
     }
 }
 
