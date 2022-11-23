@@ -9,7 +9,7 @@ class CalculatorTest {
         //given
         String expression = "2 + 2 * 2";
         //then
-        Integer result = Calculator.calc(expression);
+        Double result = Calculator.calc(expression);
         //expect
         assert result == 6;
     }
@@ -18,7 +18,7 @@ class CalculatorTest {
         //given
         String expression = "2 + -2 * 2";
         //then
-        Integer result = Calculator.calc(expression);
+        Double result = Calculator.calc(expression);
         //expect
         assert result == -2;
     }
@@ -27,7 +27,7 @@ class CalculatorTest {
         //given
         String expression = "2 - 2 * 2";
         //then
-        Integer result = Calculator.calc(expression);
+        Double result = Calculator.calc(expression);
         //expect
         assert result == -2;
     }
@@ -37,7 +37,7 @@ class CalculatorTest {
         //given
         String expression = "-2 - 3 * 2 + -1 - 3 * -2";
         //then
-        Integer result = Calculator.calc(expression);
+        Double result = Calculator.calc(expression);
         //expect
         assert result == -3;
     }
@@ -47,7 +47,7 @@ class CalculatorTest {
         //given
         String expression = "-2 + -2 - 0 / 2 + -1 - 3 * -2";
         //then
-        Integer result = Calculator.calc(expression);
+        Double result = Calculator.calc(expression);
         //expect
         assert result == 1;
     }
@@ -57,7 +57,7 @@ class CalculatorTest {
         //given
         String expression = "-40 * 1 / 2 * 1 / 5";
         //then
-        Integer result = Calculator.calc(expression);
+        Double result = Calculator.calc(expression);
         //expect
         assert result == -4;
     }
