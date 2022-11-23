@@ -1,18 +1,20 @@
+import java.util.Arrays;
 import java.util.Stack;
+import java.util.function.Function;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
 public class Calculator extends CalculatorBaseListener {
-    private final Stack<Integer> stack = new Stack<>();
+    private final Stack<Double> stack = new Stack<>();
 
-    public Integer getResult() {
-        return stack.pop();
+    public Double getResult() {
+        return stack.peek();
     }
 
     @Override
     public void exitExpression(CalculatorParser.ExpressionContext ctx) {
-        Integer result = stack.pop();
+        var result = stack.pop();
         for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
             if (symbolEquals(ctx.getChild(i), CalculatorParser.PLUS)) {
                 result += stack.pop();
@@ -21,13 +23,13 @@ public class Calculator extends CalculatorBaseListener {
             }
         }
         stack.push(result);
-        System.out.println("Expression: \"" + ctx.getText() + "\" -> "+result);
+        System.out.println("Expression: \"" + ctx.getText() + "\" -> " + result);
     }
 
 
     @Override
     public void exitMultiplyingExpression(CalculatorParser.MultiplyingExpressionContext ctx) {
-        Integer result = stack.pop();
+        var result = stack.pop();
         for (int i = ctx.getChildCount() - 2; i >= 1; i = i - 2) {
             if (symbolEquals(ctx.getChild(i), CalculatorParser.TIMES)) {
                 result = stack.pop() * result;
@@ -36,22 +38,90 @@ public class Calculator extends CalculatorBaseListener {
             }
         }
         stack.push(result);
-        System.out.println("MultiplyingExpression: \"" + ctx.getText() + "\" -> "+result);
+        System.out.println("MultiplyingExpression: \"" + ctx.getText() + "\" -> " + result);
+    }
+
+    @Override
+    public void exitPowExpression(CalculatorParser.PowExpressionContext ctx) {
+        var result = stack.pop();
+        for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
+            result = Math.pow(result, stack.pop());
+        }
+        stack.push(result);
+        System.out.println("PowExpression: \"" + ctx.getText() + "\" -> " + result);
+    }
+
+    @Override
+    public void exitSignedAtom(CalculatorParser.SignedAtomContext ctx) {
+        if (ctx.MINUS() != null) {
+            stack.push(-1 * stack.pop());
+        }
+
+        System.out.println("SignedAtom: \"" + ctx.getText() + "\" -> " + stack.peek());
+    }
+
+    @Override
+    public void exitAtom(CalculatorParser.AtomContext ctx) {
+        System.out.println("Atom: \"" + ctx.getText() + "\" -> " + stack.peek());
+    }
+
+    @Override
+    public void exitScientific(CalculatorParser.ScientificContext ctx) {
+        String scientificNumber = ctx.getText();
+        double firstNumber = Arrays.stream(scientificNumber.split("[Ee]")).findFirst().map(Double::valueOf)
+                .orElseThrow(() -> new RuntimeException("first number in SCIENTIFIC token not found"));
+        double secondNumber = Arrays.stream(scientificNumber.split("[Ee]"))
+                .skip(1)
+                .findFirst()
+                .map(it -> it.replace("+", ""))
+                .map(it -> it.replace("-", ""))
+                .map(Double::valueOf)
+                .orElse(0.0);
+        if (scientificNumber.contains("-")) {
+            stack.push(firstNumber * Math.pow(10, -1 * secondNumber));
+        } else {
+            stack.push(firstNumber * Math.pow(10, secondNumber));
+        }
+        System.out.println("Scientific: \"" + ctx.getText() + "\" -> " + stack.peek());
+    }
+
+    @Override
+    public void exitConstant(CalculatorParser.ConstantContext ctx) {
+        if (ctx.PI() != null) {
+            stack.push(Math.PI);
+        } else if (ctx.EULER() != null) {
+            stack.push(Math.E);
+        } else {
+            throw new RuntimeException("Unimplemented const");
+        }
+        System.out.println("Constant: \"" + ctx.getText() + "\" -> " + stack.peek());
+    }
+
+    @Override
+    public void exitFunc_(CalculatorParser.Func_Context ctx) {
+        Double result = getFunction(ctx.funcname()).apply(stack.pop());
+        stack.push(result);
+        System.out.println("Func_: \"" + ctx.getText() + "\" -> " + result);
+
+    }
+
+    private Function<Double, Double> getFunction(CalculatorParser.FuncnameContext name) {
+        return switch (name.getRuleIndex()) {
+            case CalculatorParser.ACOS -> Math::acos;
+            case CalculatorParser.ASIN -> Math::asin;
+            case CalculatorParser.ATAN -> Math::atan;
+            case CalculatorParser.COS -> Math::cos;
+            case CalculatorParser.SIN -> Math::sin;
+            case CalculatorParser.TAN -> Math::tan;
+            case CalculatorParser.SQRT -> Math::sqrt;
+            case CalculatorParser.LN -> Math::log;
+            case CalculatorParser.LOG -> Math::log10;
+            default -> throw new RuntimeException("Function not implemented");
+        };
     }
 
     private boolean symbolEquals(ParseTree child, int symbol) {
         return ((TerminalNode) child).getSymbol().getType() == symbol;
-    }
-
-    @Override
-    public void exitIntegralExpression(CalculatorParser.IntegralExpressionContext ctx) {
-        int value = Integer.parseInt(ctx.INT().getText());
-        if (ctx.MINUS() != null) {
-            stack.push(-1 * value);
-        } else {
-            stack.push(value);
-        }
-        System.out.println("IntegralExpression: \"" + ctx.getText() + "\" ");
     }
 
     public static void main(String[] args) throws Exception {
