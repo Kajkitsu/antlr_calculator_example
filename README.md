@@ -58,9 +58,8 @@ public class Calculator extends CalculatorBaseListener {
         System.out.println("IntegralExpression: \"" + ctx.getText() + "\" ");
     }
 
-    public static void main(String[] args) throws Exception {
-        CharStream charStreams = CharStreams.fromFileName("./example.txt");
-        CalculatorLexer lexer = new CalculatorLexer(charStreams);
+    public static Integer calc(CharStream charStream) {
+        CalculatorLexer lexer = new CalculatorLexer(charStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         System.out.println(tokens.getText());
 
@@ -70,11 +69,23 @@ public class Calculator extends CalculatorBaseListener {
         ParseTreeWalker walker = new ParseTreeWalker();
         Calculator calculatorListener = new Calculator();
         walker.walk(calculatorListener, tree);
-        System.out.println("Result = " + calculatorListener.getResult());
+        return calculatorListener.getResult();
+    }
+
+    public static Integer calc(String expression) {
+        return calc(CharStreams.fromString(expression));
+    }
+
+    public static void main(String[] args) throws Exception {
+        CharStream charStreams = CharStreams.fromFileName("./example.txt");
+        Integer result = calc(charStreams);
+        System.out.println("Result = " + result);
     }
 }
 ```
-Linia `walker.walk(calculatorListener, tree);` jest kluczowa w metodzie `main()` ze względu na to, że po jej wykonaniu  `ParseTreeWalker` przechodzi przez wszystkie węzły w drzewie syntaktycznym,  i wykonuje metody nadpisane przez klasę Calculator, konkretnie te ,które są rozszerzane z klasy CalculatorBaseListener (została ona wygenerowana przez antlr-a w kroku nr 4 w poprzedniej sekcji)
+Linia `walker.walk(calculatorListener, tree);` jest kluczowa w metodzie `calc()` ze względu na to, że po jej wykonaniu  `ParseTreeWalker` przechodzi 
+przez wszystkie węzły w drzewie syntaktycznym,  i wykonuje metody nadpisane przez klasę Calculator, konkretnie te, 
+które są rozszerzane z klasy CalculatorBaseListener (została ona wygenerowana przez antlr-a w kroku nr 4 w poprzedniej sekcji)
 Do zrealizowania pełnej funkcjonalności kalkulatora należy nadpisać metody: `exitExpression`, `exitMultiplyingExpression`, `exitIntegralExpression`.
 W zaprezentowanej implementacji `ParseTreeWalker` po wyjściu z każdego węzła wypisze w konsoli jego reprezentację tekstow.
 Pozwala to zobrazować, w jakiej kolejności są odwiedzane kolejne węzły. 
@@ -105,7 +116,9 @@ Przydatne linki:
 - [Ewaluacja wyrażeń](https://www.jetbrains.com/help/idea/examining-suspended-program.html#evaluating-expressions)
 3. Zdejmowanie i ładowanie liczb ze stosu.
 ```java
-    private final Stack<Integer> stack = new Stack<>();
+    private final LinkedList<Integer> firstStack = new LinkedList<>();
+    private final LinkedList<Integer> secondStack = new LinkedList<>();
+
 
     public Integer getResult() {
         return stack.pop();
@@ -116,33 +129,36 @@ Przydatne linki:
     public void exitIntegralExpression(CalculatorParser.IntegralExpressionContext ctx) {
         int value = Integer.parseInt(ctx.INT().getText());
         if (ctx.MINUS() != null) {
-            stack.push(-1 * value);
+            firstStack.push(-1 * value);
         } else {
-            stack.push(value);
+            firstStack.push(value);
         }
         System.out.println("IntegralExpression: \"" + ctx.getText() + "\" ");
     }
 
+
 ```
-Kalkulator w trakcie swojego działania będzie korzystał ze struktury stosu do przechowywania liczb, 
+Kalkulator w trakcie swojego działania będzie korzystał ze struktury listy do przechowywania liczb, 
 na których będą wykonywane działania matematyczne. W powyższym przykładzie dodano cała implementacje
 węzła _IntegralExpression_. Tekst, który pasuje do tokena _INT_, jest rzutowany na typ całkowitoliczbowy.
-Następnie w zależności czy w wyrażeniu znajduje się token _MINUS_, na stos trafia liczba przeciwna, w 
+Następnie w zależności czy w wyrażeniu znajduje się token _MINUS_, na liste trafia liczba przeciwna, w 
 przeciwnym wypadku bez modyfikacji.
+
+Na _firstStack_ trafiają liczby na których będą wykonywane operacje mnożenia i dzielenia, a na _secondStack_ liczby na których będą wykonywane operacje dodawania i odejmowania.
 4. Operacja mnożenia i dzielenia:
 ```java
     @Override
     public void exitMultiplyingExpression(CalculatorParser.MultiplyingExpressionContext ctx) {
-        Integer result = stack.pop();
-        for (int i = ctx.getChildCount() - 2; i >= 1; i = i - 2) {
+        Integer result = firstStack.removeLast();
+        for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
             if (symbolEquals(ctx.getChild(i), CalculatorParser.TIMES)) {
-                result = stack.pop() * result;
+                result = result * firstStack.removeLast();
             } else {
-                result = stack.pop() / result;
+                result = result / firstStack.removeLast();
             }
         }
-        stack.push(result);
-        System.out.println("MultiplyingExpression: \"" + ctx.getText() + "\" -> "+result);
+        secondStack.push(result);
+        System.out.println("MultiplyingExpression: \"" + ctx.getText() + "\" -> " + result);
     }
 
     private boolean symbolEquals(ParseTree child, int symbol) {
@@ -152,31 +168,27 @@ przeciwnym wypadku bez modyfikacji.
 Powyżej zaprezentowano implementacje _exitMultiplyingExpression_.
 Pętla for iteruje po kolejnych symbolach mnożenia i dzielenie w wyrażeniu.
 Jeżeli w wyrażeniu nie znajduje się żaden symbol (w przykładzie jest to np. pierwsza lewa gałąź w drzewie)
-pętla nie wykona się ani razu i na stos trafi ta sama liczba, która została pobrana.
+pętla nie wykona się ani razu i na druga liste trafa ta sama liczba, która została pobrana. 
 Metoda _symbolEquals_ służy do sprawdzania jakiego typu jest obsługiwany węzeł, w zależności od tego wykonywana
 jest instrukcja warunkowa, która realizuje operacje mnożenia lub dzielenia i zapisuje wynik do zmiennej _result_.
-Na koniec wynik całego wyrażenia trafia na stos.
+Na koniec wynik całego wyrażenia trafia na druga liste _secondStack_.
 5. Operacja dodawania i odejmowania:
 ```java
     @Override
     public void exitExpression(CalculatorParser.ExpressionContext ctx) {
-        Integer result = stack.pop();
+        Integer result = secondStack.removeLast();
         for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
             if (symbolEquals(ctx.getChild(i), CalculatorParser.PLUS)) {
-                result += stack.pop();
+                result = result + secondStack.removeLast();
             } else {
-                result -= stack.pop();
+                result = result - secondStack.removeLast();
             }
         }
-        stack.push(result);
-        System.out.println("Expression: \"" + ctx.getText() + "\" -> "+result);
+        secondStack.push(result);
+        System.out.println("Expression: \"" + ctx.getText() + "\" -> " + result);
     }
 ```
-Główna różnica między _exitExpression_, a _exitMultiplyingExpression_ znajduje się w pętli for.
-Ze względu na to, w jaki sposób na stos trafiają i są zdejmowane kolejne wartości. Pętla _for_ iteruje w przeciwnym kierunku.
-Również strony wykonywania działania są w związku z tym odwrócone.
-Skorzystanie z innej struktury, która pozwala na dodawanie i zdejmowanie wartości w dowolny sposób np. _LinkedList_
-pozwoliłoby iterowanie w pętli _for_ w taki sam sposób jak w _exitMultiplyingExpression_.
+Metody _exitExpression_ i _exitMultiplyingExpression_ róznią sie minimalanie.
 
 6. Wynik działania.
 ```
