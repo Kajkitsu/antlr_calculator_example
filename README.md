@@ -3,7 +3,7 @@
 `wget https://www.antlr.org/download/antlr-4.11.1-complete.jar`
 2. Utworzenie gramatyki kalkulatora: `nano Calcualtor.g4`
 ```
-grammar Calculator;
+grammar MainListener;
 
 
 expression: multiplyingExpression ((PLUS | MINUS) multiplyingExpression)*;
@@ -24,19 +24,20 @@ WS : [ \t\r\n]+ -> skip ;
 ```
 1 - 3 * 4 / 2 - 2 + 3 * 4 / 4
 ```
-4. Wygenerowanie klas Lexera i Parsera dla Kalkulatora: `java -jar ./antlr-4.11.1-complete.jar Calculator.g4`
-5. Kompilacja klas ```javac -cp ./antlr-4.11.1-complete.jar Calculator*.java```
-5. Sprawdzenie poprawności gramatyki poprzez wygenerowanie drzewa syntaktycznego dla przykładowych danych wejściowych: `java -cp .:antlr-4.11.1-complete.jar org.antlr.v4.gui.TestRig Calculator expression -tree -gui example.txt`
+4. Wygenerowanie klas Lexera i Parsera dla Kalkulatora: `java -jar ./antlr-4.11.1-complete.jar MainListener.g4`
+5. Kompilacja klas ```javac -cp ./antlr-4.11.1-complete.jar MainListener*.java```
+5. Sprawdzenie poprawności gramatyki poprzez wygenerowanie drzewa syntaktycznego dla przykładowych danych wejściowych: `java -cp .:antlr-4.11.1-complete.jar org.antlr.v4.gui.TestRig MainListener expression -tree -gui example.txt`
 ![](assets/antlr4_parse_tree.png)
 
 
 ### Praca w IDE
 1. Utworzenie klasy _Calculator_ rozszerzającej _CalculatorBaseListener_, z której nadpisane metody będą służyły do wyliczenia wartości z pliku, który zostanie podany na wejściu.
+
 ```java
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
-public class Calculator extends CalculatorBaseListener {
+public class MainListener extends CalculatorBaseListener {
 
     public Integer getResult() {
         return 0;
@@ -67,9 +68,9 @@ public class Calculator extends CalculatorBaseListener {
         ParseTree tree = parser.expression();
 
         ParseTreeWalker walker = new ParseTreeWalker();
-        Calculator calculatorListener = new Calculator();
-        walker.walk(calculatorListener, tree);
-        return calculatorListener.getResult();
+        MainListener mainListener = new MainListener();
+        walker.walk(mainListener, tree);
+        return mainListener.getResult();
     }
 
     public static Integer calc(String expression) {
@@ -83,8 +84,8 @@ public class Calculator extends CalculatorBaseListener {
     }
 }
 ```
-Linia `walker.walk(calculatorListener, tree);` jest kluczowa w metodzie `calc()` ze względu na to, że po jej wykonaniu  `ParseTreeWalker` przechodzi 
-przez wszystkie węzły w drzewie syntaktycznym,  i wykonuje metody nadpisane przez klasę Calculator, konkretnie te, 
+Linia `walker.walk(mainListener, tree);` jest kluczowa w metodzie `calc()` ze względu na to, że po jej wykonaniu  `ParseTreeWalker` przechodzi 
+przez wszystkie węzły w drzewie syntaktycznym,  i wykonuje metody nadpisane przez klasę MainListener, konkretnie te, 
 które są rozszerzane z klasy CalculatorBaseListener (została ona wygenerowana przez antlr-a w kroku nr 4 w poprzedniej sekcji)
 Do zrealizowania pełnej funkcjonalności kalkulatora należy nadpisać metody: `exitExpression`, `exitMultiplyingExpression`, `exitIntegralExpression`.
 W zaprezentowanej implementacji `ParseTreeWalker` po wyjściu z każdego węzła wypisze w konsoli jego reprezentację tekstow.
