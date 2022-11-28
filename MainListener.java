@@ -1,69 +1,82 @@
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.tree.TerminalNode;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Function;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
-
-public class Calculator extends CalculatorBaseListener {
-    private final LinkedList<Double> firstStack = new LinkedList<>();
-    private final LinkedList<Double> secondStack = new LinkedList<>();
+public class MainListener extends CalculatorBaseListener {
+    private final MyStack<Double> stack = new MyStack<>();
 
     public Double getResult() {
-        return secondStack.pop();
+        return stack.pop();
     }
 
     @Override
     public void exitExpression(CalculatorParser.ExpressionContext ctx) {
-        Double result = secondStack.removeLast();
-        for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
-            if (symbolEquals(ctx.getChild(i), CalculatorParser.PLUS)) {
-                result = result + secondStack.removeLast();
+        List<Token> tokens = getSymbols(ctx);
+        Iterator<Double> numbers = stack.pop(ctx.getChildCount() - tokens.size()).iterator();
+        Double result = numbers.next();
+        for(Token token: tokens) {
+            if(token.getType() == CalculatorParser.PLUS) {
+                result = result + numbers.next();
             } else {
-                result = result - secondStack.removeLast();
+                result = result - numbers.next();
             }
         }
-        secondStack.push(result);
+        stack.push(result);
         System.out.println("Expression: \"" + ctx.getText() + "\" -> " + result);
     }
 
 
     @Override
     public void exitMultiplyingExpression(CalculatorParser.MultiplyingExpressionContext ctx) {
-        Double result = firstStack.removeLast();
-        for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
-            if (symbolEquals(ctx.getChild(i), CalculatorParser.TIMES)) {
-                result = result * firstStack.removeLast();
+        List<Token> tokens = getSymbols(ctx);
+        Iterator<Double> numbers = stack.pop(ctx.getChildCount() - tokens.size()).iterator();
+        Double result = numbers.next();
+        for(Token token: tokens) {
+            if(token.getType() == CalculatorParser.TIMES) {
+                result = result * numbers.next();
             } else {
-                result = result / firstStack.removeLast();
+                result = result / numbers.next();
             }
         }
-        secondStack.push(result);
+        stack.push(result);
         System.out.println("MultiplyingExpression: \"" + ctx.getText() + "\" -> " + result);
     }
 
     @Override
     public void exitPowExpression(CalculatorParser.PowExpressionContext ctx) {
-        var result = firstStack.pop();
-        for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
-            result = Math.pow(result, firstStack.pop());
+        List<Token> tokens = getSymbols(ctx);
+        Iterator<Double> numbers = stack.popReverted(ctx.getChildCount() - tokens.size()).iterator();
+        Double result = numbers.next();
+        for(Token token: tokens) {
+            result = Math.pow(numbers.next(), result);
         }
-        firstStack.push(result);
+        stack.push(result);
         System.out.println("PowExpression: \"" + ctx.getText() + "\" -> " + result);
     }
 
     @Override
     public void exitSignedAtom(CalculatorParser.SignedAtomContext ctx) {
         if (ctx.MINUS() != null) {
-            firstStack.push(-1 * firstStack.pop());
+            stack.push(-1 * stack.pop());
         }
 
-        System.out.println("SignedAtom: \"" + ctx.getText() + "\" -> " + firstStack.peek());
+        System.out.println("SignedAtom: \"" + ctx.getText() + "\" -> " + stack.peek());
     }
 
     @Override
     public void exitAtom(CalculatorParser.AtomContext ctx) {
-        System.out.println("Atom: \"" + ctx.getText() + "\" -> " + firstStack.peek());
+        System.out.println("Atom: \"" + ctx.getText() + "\" -> " + stack.peek());
     }
 
     @Override
@@ -79,29 +92,29 @@ public class Calculator extends CalculatorBaseListener {
                 .map(Double::valueOf)
                 .orElse(0.0);
         if (scientificNumber.contains("-")) {
-            firstStack.push(firstNumber * Math.pow(10, -1 * secondNumber));
+            stack.push(firstNumber * Math.pow(10, -1 * secondNumber));
         } else {
-            firstStack.push(firstNumber * Math.pow(10, secondNumber));
+            stack.push(firstNumber * Math.pow(10, secondNumber));
         }
-        System.out.println("Scientific: \"" + ctx.getText() + "\" -> " + firstStack.peek());
+        System.out.println("Scientific: \"" + ctx.getText() + "\" -> " + stack.peek());
     }
 
     @Override
     public void exitConstant(CalculatorParser.ConstantContext ctx) {
         if (ctx.PI() != null) {
-            firstStack.push(Math.PI);
+            stack.push(Math.PI);
         } else if (ctx.EULER() != null) {
-            firstStack.push(Math.E);
+            stack.push(Math.E);
         } else {
             throw new RuntimeException("Unimplemented const");
         }
-        System.out.println("Constant: \"" + ctx.getText() + "\" -> " + firstStack.peek());
+        System.out.println("Constant: \"" + ctx.getText() + "\" -> " + stack.peek());
     }
 
     @Override
     public void exitFunc_(CalculatorParser.Func_Context ctx) {
-        Double result = getFunction(ctx.funcname()).apply(firstStack.pop());
-        firstStack.push(result);
+        Double result = getFunction(ctx.funcname()).apply(stack.pop());
+        stack.push(result);
         System.out.println("Func_: \"" + ctx.getText() + "\" -> " + result);
 
     }
@@ -125,6 +138,18 @@ public class Calculator extends CalculatorBaseListener {
         return ((TerminalNode) child).getSymbol().getType() == symbol;
     }
 
+
+    private List<Token> getSymbols(ParseTree ctx) {
+        LinkedList<Token> list = new LinkedList<>();
+        for (int i = 0; i < ctx.getChildCount(); i++) {
+            if(ctx.getChild(i) instanceof TerminalNode) {
+                list.add(((TerminalNode)ctx.getChild(i)).getSymbol());
+            }
+        }
+        return list;
+    }
+
+
     public static Double calc(CharStream charStream) {
         CalculatorLexer lexer = new CalculatorLexer(charStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -134,9 +159,9 @@ public class Calculator extends CalculatorBaseListener {
         ParseTree tree = parser.expression();
 
         ParseTreeWalker walker = new ParseTreeWalker();
-        Calculator calculatorListener = new Calculator();
-        walker.walk(calculatorListener, tree);
-        return calculatorListener.getResult();
+        MainListener mainListenerListener = new MainListener();
+        walker.walk(mainListenerListener, tree);
+        return mainListenerListener.getResult();
     }
 
     public static Double calc(String expression) {
