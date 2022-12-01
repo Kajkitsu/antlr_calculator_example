@@ -21,11 +21,12 @@ public class MainListener extends CalculatorBaseListener {
 
     @Override
     public void exitExpression(CalculatorParser.ExpressionContext ctx) {
+        System.out.println("start Expression: \"" + ctx.getText());
         List<Token> tokens = getSymbols(ctx);
         Iterator<Double> numbers = stack.pop(ctx.getChildCount() - tokens.size()).iterator();
         Double result = numbers.next();
-        for(Token token: tokens) {
-            if(token.getType() == CalculatorParser.PLUS) {
+        for (Token token : tokens) {
+            if (token.getType() == CalculatorParser.PLUS) {
                 result = result + numbers.next();
             } else {
                 result = result - numbers.next();
@@ -38,11 +39,12 @@ public class MainListener extends CalculatorBaseListener {
 
     @Override
     public void exitMultiplyingExpression(CalculatorParser.MultiplyingExpressionContext ctx) {
+        System.out.println("start MultiplyingExpression: \"" + ctx.getText());
         List<Token> tokens = getSymbols(ctx);
         Iterator<Double> numbers = stack.pop(ctx.getChildCount() - tokens.size()).iterator();
         Double result = numbers.next();
-        for(Token token: tokens) {
-            if(token.getType() == CalculatorParser.TIMES) {
+        for (Token token : tokens) {
+            if (token.getType() == CalculatorParser.TIMES) {
                 result = result * numbers.next();
             } else {
                 result = result / numbers.next();
@@ -54,10 +56,11 @@ public class MainListener extends CalculatorBaseListener {
 
     @Override
     public void exitPowExpression(CalculatorParser.PowExpressionContext ctx) {
+        System.out.println("start PowExpression: \"" + ctx.getText());
         List<Token> tokens = getSymbols(ctx);
         Iterator<Double> numbers = stack.popReverted(ctx.getChildCount() - tokens.size()).iterator();
         Double result = numbers.next();
-        for(Token token: tokens) {
+        for (Token token : tokens) {
             result = Math.pow(numbers.next(), result);
         }
         stack.push(result);
@@ -66,6 +69,7 @@ public class MainListener extends CalculatorBaseListener {
 
     @Override
     public void exitSignedAtom(CalculatorParser.SignedAtomContext ctx) {
+        System.out.println("start SignedAtom: \"" + ctx.getText());
         if (ctx.MINUS() != null) {
             stack.push(-1 * stack.pop());
         }
@@ -75,11 +79,13 @@ public class MainListener extends CalculatorBaseListener {
 
     @Override
     public void exitAtom(CalculatorParser.AtomContext ctx) {
+        System.out.println("start Atom: \"" + ctx.getText());
         System.out.println("Atom: \"" + ctx.getText() + "\" -> " + stack.peek());
     }
 
     @Override
     public void exitScientific(CalculatorParser.ScientificContext ctx) {
+        System.out.println("start Scientific: \"" + ctx.getText());
         String scientificNumber = ctx.getText();
         double firstNumber = Arrays.stream(scientificNumber.split("[Ee]")).findFirst().map(Double::valueOf)
                 .orElseThrow(() -> new RuntimeException("first number in SCIENTIFIC token not found"));
@@ -100,6 +106,7 @@ public class MainListener extends CalculatorBaseListener {
 
     @Override
     public void exitConstant(CalculatorParser.ConstantContext ctx) {
+        System.out.println("start Constant: \"" + ctx.getText());
         if (ctx.PI() != null) {
             stack.push(Math.PI);
         } else if (ctx.EULER() != null) {
@@ -112,6 +119,7 @@ public class MainListener extends CalculatorBaseListener {
 
     @Override
     public void exitFunc_(CalculatorParser.Func_Context ctx) {
+        System.out.println("start Func_: \"" + ctx.getText());
         Double result = getFunction(ctx.funcname()).apply(stack.pop());
         stack.push(result);
         System.out.println("Func_: \"" + ctx.getText() + "\" -> " + result);
@@ -136,8 +144,8 @@ public class MainListener extends CalculatorBaseListener {
     private List<Token> getSymbols(ParseTree ctx) {
         LinkedList<Token> list = new LinkedList<>();
         for (int i = 0; i < ctx.getChildCount(); i++) {
-            if(ctx.getChild(i) instanceof TerminalNode) {
-                list.add(((TerminalNode)ctx.getChild(i)).getSymbol());
+            if (ctx.getChild(i) instanceof TerminalNode) {
+                list.add(((TerminalNode) ctx.getChild(i)).getSymbol());
             }
         }
         return list;

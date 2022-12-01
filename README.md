@@ -31,7 +31,7 @@ WS : [ \t\r\n]+ -> skip ;
 
 
 ### Praca w IDE
-1. Utworzenie klasy _Calculator_ rozszerzającej _CalculatorBaseListener_, z której nadpisane metody będą służyły do wyliczenia wartości z pliku, który zostanie podany na wejściu.
+1. Utworzenie klasy _MainListener_ rozszerzającej _CalculatorBaseListener_, z której nadpisane metody będą służyły do wyliczenia wartości z pliku, który zostanie podany na wejściu.
 
 ```java
 import org.antlr.v4.runtime.*;
