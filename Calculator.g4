@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 grammar Calculator;
 
-//equation
-//   : expression relop expression EOF
-//   ;
+equation
+   : expression relop expression EOF
+   ;
 
 expression
    : multiplyingExpression ((PLUS | MINUS) multiplyingExpression)*
@@ -57,7 +57,7 @@ signedAtom
 
 atom
    : scientific
-//   | variable
+   | variable
    | constant
    | LPAREN expression RPAREN
    ;
@@ -72,9 +72,9 @@ constant
    | I
    ;
 
-//variable
-//   : VARIABLE
-//   ;
+variable
+   : VARIABLE
+   ;
 
 func_
    : funcname LPAREN expression
@@ -94,11 +94,11 @@ funcname
    | SQRT
    ;
 
-//relop
-//   : EQ
-//   | GT
-//   | LT
-//   ;
+relop
+   : EQ
+   | GT
+   | LT
+   ;
 
 
 COS
@@ -176,19 +176,19 @@ DIV
    ;
 
 
-//GT
-//   : '>'
-//   ;
-//
-//
-//LT
-//   : '<'
-//   ;
-//
-//
-//EQ
-//   : '='
-//   ;
+GT
+   : '>'
+   ;
+
+
+LT
+   : '<'
+   ;
+
+
+EQ
+   : '='
+   ;
 
 
 //COMMA
@@ -218,22 +218,22 @@ EULER
 
 I
    : 'i'
-   ;
+   ;VARIABLE
+       : VALID_ID_START VALID_ID_CHAR*
+       ;
 
 
-//VARIABLE
-//   : VALID_ID_START VALID_ID_CHAR*
-//   ;
-//
-//
-//fragment VALID_ID_START
-//   : ('a' .. 'z') | ('A' .. 'Z') | '_'
-//   ;
-//
-//
-//fragment VALID_ID_CHAR
-//   : VALID_ID_START | ('0' .. '9')
-//   ;
+    fragment VALID_ID_START
+       : ('a' .. 'z') | ('A' .. 'Z') | '_'
+       ;
+
+
+    fragment VALID_ID_CHAR
+       : VALID_ID_START | ('0' .. '9')
+       ;
+
+
+
 
 
 SCIENTIFIC_NUMBER
