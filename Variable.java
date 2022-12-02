@@ -13,6 +13,17 @@ public class Variable extends Expression {
     }
 
     @Override
+    public OperatorList getOperators() {
+        return OperatorList.emptyList();
+    }
+
+    @Override
+    public ExpressionList getExpressions() {
+        return ExpressionList.of(this);
+    }
+
+
+    @Override
     Integer getLevel() {
         return Level.ATOM;
     }

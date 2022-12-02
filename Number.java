@@ -14,6 +14,16 @@ public class Number extends Expression {
     }
 
     @Override
+    public OperatorList getOperators() {
+        return OperatorList.emptyList();
+    }
+
+    @Override
+    public ExpressionList getExpressions() {
+        return ExpressionList.of(this);
+    }
+
+    @Override
     public Expression times(Expression that) {
         if (that instanceof Number) {
             return new Number(this.value * ((Number) that).value);

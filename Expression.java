@@ -8,13 +8,15 @@ public class Expression {
     private final ExpressionList expressionList;
 
     public Expression(List<Operator> operatorList, List<Expression> expressionList) {
-        assert expressionList.size() - 1 == operatorList.size() || (operatorList.size() == 0 && expressionList.size() == 0);
+        assert expressionList.size() >= 1;
+        assert expressionList.size() - 1 == operatorList.size();
         this.operatorList = OperatorList.of(operatorList);
         this.expressionList = ExpressionList.of(expressionList);
     }
 
-    public Expression() {
-        this(OperatorList.emptyList(), ExpressionList.emptyList());
+    protected Expression() {
+        this.expressionList = null;
+        this.operatorList = null;
     }
 
     public OperatorList getOperators() {
@@ -157,7 +159,7 @@ public class Expression {
             Operator function = this.getOperators().get(0).getNeutralizer();
             return Optional.of(new Neutralizer((Number) expression, function));
         }
-        if (this instanceof Number) {
+        if (this instanceof Number || this instanceof Variable) {
             return Optional.empty();
         }
         throw new RuntimeException("Unsupported operation");
