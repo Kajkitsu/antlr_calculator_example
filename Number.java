@@ -21,10 +21,7 @@ public class Number extends Expression {
         if(that.getLevel().equals(Level.MULTI_DIV) && that.getExpressions().get(0) instanceof Number firstNumber) {
             var newFirstNumber = new Number(this.value * firstNumber.value);
             if(newFirstNumber.equals(Number.ONE)) {
-                return new Expression(
-                        that.getOperators().withoutFirst(),
-                        that.getExpressions().withoutFirst()
-                );
+                return that.withoutFirst();
             }
             return new Expression(
                     that.getOperators(),
@@ -41,6 +38,9 @@ public class Number extends Expression {
         }
         if(that.getLevel().equals(Level.MULTI_DIV) && that.getExpressions().get(0) instanceof Number firstNumber) {
             var newFirstNumber = new Number(this.value / firstNumber.value);
+            if(newFirstNumber.equals(Number.ONE)) {
+                return that.withoutFirst();
+            }
             return new Expression(
                     that.getOperators(),
                     that.getExpressions().withFirstAs(newFirstNumber)
@@ -57,10 +57,7 @@ public class Number extends Expression {
         if(that.getLevel().equals(Level.ADD_SUB) && that.getExpressions().get(0) instanceof Number firstNumber) {
             var newFirstNumber = new Number(this.value + firstNumber.value);
             if(newFirstNumber.equals(Number.ZERO)) {
-                return new Expression(
-                        that.getOperators().withoutFirst(),
-                        that.getExpressions().withoutFirst()
-                );
+                return that.withoutFirst();
             }
             return new Expression(
                     that.getOperators(),
@@ -78,6 +75,9 @@ public class Number extends Expression {
         }
         if(that.getLevel().equals(Level.ADD_SUB) && that.getExpressions().get(0) instanceof Number firstNumber) {
             var newFirstNumber = new Number(this.value - firstNumber.value);
+            if(newFirstNumber.equals(Number.ZERO)) {
+                return that.withoutFirst();
+            }
             return new Expression(
                     that.getOperators(),
                     that.getExpressions().withFirstAs(newFirstNumber)

@@ -17,10 +17,6 @@ public class Expression {
         this(OperatorList.emptyList(), ExpressionList.emptyList());
     }
 
-    public Expression(Expression expression) {
-        this(OperatorList.emptyList(), ExpressionList.of(expression));
-    }
-
     public OperatorList getOperators() {
         return operatorList;
     }
@@ -153,6 +149,9 @@ public class Expression {
     }
 
     public Optional<Neutralizer> getNeutralizer() {
+        if(this.getExpressions().size() == 0) {
+            return Optional.empty();
+        }
         Expression expression = this.getExpressions().get(0);
         if (expression instanceof Number) {
             Operator function = this.getOperators().get(0).getNeutralizer();
@@ -172,6 +171,18 @@ public class Expression {
             case TIMES -> this::times;
             case POW -> this::pow;
         };
+    }
+
+    protected Expression withoutFirst() {
+        var newExpressionList = this.expressionList.withoutFirst();
+        var newOperatorList = this.operatorList.withoutFirst();
+        if(newExpressionList.size() == 1) {
+            return newExpressionList.get(0);
+        }
+        return new Expression(
+                newOperatorList,
+                newExpressionList
+        );
     }
 
 

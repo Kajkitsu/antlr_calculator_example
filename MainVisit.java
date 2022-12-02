@@ -20,7 +20,7 @@ public class MainVisit extends CalculatorBaseVisitor<Expression> {
         Expression leftExpression = Number.ZERO;
         System.out.println(leftExpression + ctx.relop().getText()//TODO
                 + rightExpression);
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 5; i++) {
             var neutralizer = rightExpression.getNeutralizer();
             if(neutralizer.isPresent()) {
                 System.out.println("Apply: "+neutralizer.get());
