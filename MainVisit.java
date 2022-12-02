@@ -12,34 +12,54 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.function.Function;
 
-public class MainVisit extends CalculatorBaseVisitor<Atom> {
+public class MainVisit extends CalculatorBaseVisitor<Expression> {
 
 
     private String getEquation(CalculatorParser.EquationContext ctx) {
-        return "0 " + ctx.relop().getText() + visitExpression(ctx.expression(1)).minus(visitExpression(ctx.expression(0)));
+        var rightExpression = visitExpression(ctx.expression(1)).minus(visitExpression(ctx.expression(0)));
+        Expression leftExpression = Number.ZERO;
+        System.out.println(leftExpression + ctx.relop().getText()//TODO
+                + rightExpression);
+        for (int i = 0; i < 1; i++) {
+            var neutralizer = rightExpression.getNeutralizer();
+            if(neutralizer.isPresent()) {
+                System.out.println("Apply: "+neutralizer.get());
+                Operator operator = neutralizer.get().getOperator();
+                Number number = neutralizer.get().getNumber();
+                rightExpression = rightExpression.getMethod(operator).apply(number);
+                leftExpression = leftExpression.getMethod(operator).apply(number);
+                System.out.println(leftExpression + ctx.relop().getText()//TODO
+                        + rightExpression);
+            }
+
+
+
+        }
+        return leftExpression + ctx.relop().getText()//TODO
+             + rightExpression;
     }
 
     @Override
-    public Atom visitEquation(CalculatorParser.EquationContext ctx) {
+    public Expression visitEquation(CalculatorParser.EquationContext ctx) {
         throw new RuntimeException("Unsupported operation");
     }
 
     @Override
-    public Atom visitVariable(CalculatorParser.VariableContext ctx) {
-        return Atom.from(ctx.getText());
+    public Expression visitVariable(CalculatorParser.VariableContext ctx) {
+        return Variable.from(ctx.getText().charAt(0));
     }
 
     @Override
-    public Atom visitRelop(CalculatorParser.RelopContext ctx) {
+    public Expression visitRelop(CalculatorParser.RelopContext ctx) {
         throw new RuntimeException("Unsupported operation");
     }
 
     @Override
-    public Atom visitExpression(CalculatorParser.ExpressionContext ctx) {
+    public Expression visitExpression(CalculatorParser.ExpressionContext ctx) {
         System.out.println("start visitExpression");
-        Iterator<Atom> numbers = ctx.multiplyingExpression().stream().map(this::visit).iterator();
+        Iterator<Expression> numbers = ctx.multiplyingExpression().stream().map(this::visit).iterator();
         List<Token> tokens = getSymbols(ctx);
-        Atom result = numbers.next();
+        Expression result = numbers.next();
         for (Token token : tokens) {
             if (token.getType() == CalculatorParser.PLUS) {
                 result = result.plus(numbers.next());
@@ -62,11 +82,11 @@ public class MainVisit extends CalculatorBaseVisitor<Atom> {
     }
 
     @Override
-    public Atom visitMultiplyingExpression(CalculatorParser.MultiplyingExpressionContext ctx) {
+    public Expression visitMultiplyingExpression(CalculatorParser.MultiplyingExpressionContext ctx) {
         System.out.println("start visitMultiplyingExpression");
-        Iterator<Atom> numbers = ctx.powExpression().stream().map(this::visit).iterator();
+        Iterator<Expression> numbers = ctx.powExpression().stream().map(this::visit).iterator();
         List<Token> tokens = getSymbols(ctx);
-        Atom result = numbers.next();
+        Expression result = numbers.next();
         for (Token token : tokens) {
             if (token.getType() == CalculatorParser.TIMES) {
                 result = result.times(numbers.next());
@@ -79,26 +99,26 @@ public class MainVisit extends CalculatorBaseVisitor<Atom> {
     }
 
     @Override
-    public Atom visitPowExpression(CalculatorParser.PowExpressionContext ctx) {
+    public Expression visitPowExpression(CalculatorParser.PowExpressionContext ctx) {
         System.out.println("start visitPowExpression");
         List<Token> tokens = getSymbols(ctx);
-        List<Atom> doubleList = ctx.signedAtom()
+        List<Expression> doubleList = ctx.signedAtom()
                 .stream()
                 .map(this::visit)
                 .toList();
-        ListIterator<Atom> numbers = doubleList.listIterator(doubleList.size());
-        Atom result = numbers.previous();
+        ListIterator<Expression> numbers = doubleList.listIterator(doubleList.size());
+        Expression result = numbers.previous();
         for (Token token : tokens) {
-            result = numbers.previous().pov(result);
+            result = numbers.previous().pow(result);
         }
         System.out.println("visitPowExpression \"" + ctx.getText() + "\" -> " + result);
         return result;
     }
 
     @Override
-    public Atom visitSignedAtom(CalculatorParser.SignedAtomContext ctx) {
+    public Expression visitSignedAtom(CalculatorParser.SignedAtomContext ctx) {
         System.out.println("start visitSignedAtom");
-        Atom result = super.visitSignedAtom(ctx);
+        Expression result = super.visitSignedAtom(ctx);
         if (ctx.MINUS() != null) {
             result = result.negative();
         }
@@ -107,9 +127,9 @@ public class MainVisit extends CalculatorBaseVisitor<Atom> {
     }
 
     @Override
-    public Atom visitAtom(CalculatorParser.AtomContext ctx) {
+    public Expression visitAtom(CalculatorParser.AtomContext ctx) {
         System.out.println("start visitAtom");
-        Atom result;
+        Expression result;
         if (ctx.expression() != null) {
             result = visit(ctx.expression());
         } else {
@@ -120,7 +140,7 @@ public class MainVisit extends CalculatorBaseVisitor<Atom> {
     }
 
     @Override
-    public Atom visitScientific(CalculatorParser.ScientificContext ctx) {
+    public Expression visitScientific(CalculatorParser.ScientificContext ctx) {
         System.out.println("start visitScientific");
         double result;
         String scientificNumber = ctx.getText();
@@ -139,17 +159,17 @@ public class MainVisit extends CalculatorBaseVisitor<Atom> {
             result = firstNumber * Math.pow(10, secondNumber);
         }
         System.out.println("visitScientific \"" + ctx.getText() + "\" -> " + result);
-        return Atom.from(result);
+        return Number.from(result);
     }
 
     @Override
-    public Atom visitConstant(CalculatorParser.ConstantContext ctx) {
+    public Expression visitConstant(CalculatorParser.ConstantContext ctx) {
         System.out.println("start visitConstant");
-        Atom result;
+        Number result;
         if (ctx.PI() != null) {
-            result = Atom.PI;
+            result = Number.PI;
         } else if (ctx.EULER() != null) {
-            result = Atom.E;
+            result = Number.E;
         } else {
             throw new RuntimeException("Unimplemented const");
         }
@@ -158,30 +178,31 @@ public class MainVisit extends CalculatorBaseVisitor<Atom> {
     }
 
     @Override
-    public Atom visitFunc_(CalculatorParser.Func_Context ctx) {
+    public Expression visitFunc_(CalculatorParser.Func_Context ctx) {
         System.out.println("start visitFunc_");
-        Atom result = getFunction(ctx.funcname()).apply(visit(ctx.expression()));
+        Expression result = getFunction(ctx.funcname()).apply(visit(ctx.expression()));
         System.out.println("visitFunc_ \"" + ctx.getText() + "\" -> " + result);
         return result;
     }
 
-    private Function<Atom, Atom> getFunction(CalculatorParser.FuncnameContext name) {
-        return switch (name.getRuleIndex()) {
-            case CalculatorParser.ACOS -> Atom::acos;
-            case CalculatorParser.ASIN -> Atom::asin;
-            case CalculatorParser.ATAN -> Atom::atan;
-            case CalculatorParser.COS -> Atom::cos;
-            case CalculatorParser.SIN -> Atom::sin;
-            case CalculatorParser.TAN -> Atom::tan;
-            case CalculatorParser.SQRT -> Atom::sqrt;
-            case CalculatorParser.LN -> Atom::log;
-            case CalculatorParser.LOG -> Atom::log10;
-            default -> throw new RuntimeException("Function not implemented");
-        };
+    private Function<Expression, Expression> getFunction(CalculatorParser.FuncnameContext name) {
+        throw new RuntimeException("Function not implemented");
+//        return switch (name.getRuleIndex()) {
+//            case CalculatorParser.ACOS -> Atom::acos;
+//            case CalculatorParser.ASIN -> Atom::asin;
+//            case CalculatorParser.ATAN -> Atom::atan;
+//            case CalculatorParser.COS -> Atom::cos;
+//            case CalculatorParser.SIN -> Atom::sin;
+//            case CalculatorParser.TAN -> Atom::tan;
+//            case CalculatorParser.SQRT -> Atom::sqrt;
+//            case CalculatorParser.LN -> Atom::log;
+//            case CalculatorParser.LOG -> Atom::log10;
+//            default -> throw new RuntimeException("Function not implemented");
+//        };
     }
 
     @Override
-    public Atom visitFuncname(CalculatorParser.FuncnameContext ctx) {
+    public Expression visitFuncname(CalculatorParser.FuncnameContext ctx) {
         System.out.println("start visitFuncname");
         var result = super.visitFuncname(ctx);
         System.out.println("visitFuncname \"" + ctx.getText() + "\" -> " + result);
@@ -201,6 +222,6 @@ public class MainVisit extends CalculatorBaseVisitor<Atom> {
     public static void main(String[] args) throws Exception {
         CharStream charStreams = CharStreams.fromFileName("./example.txt");
         var result = evaluate(charStreams);
-        System.out.println("Result = " + result);
+        System.out.println("Result -> " + result);
     }
 }

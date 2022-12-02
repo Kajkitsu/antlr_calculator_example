@@ -218,22 +218,10 @@ EULER
 
 I
    : 'i'
-   ;VARIABLE
-       : VALID_ID_START VALID_ID_CHAR*
+   ;
+VARIABLE
+        : ('a' .. 'z') | ('A' .. 'Z')
        ;
-
-
-    fragment VALID_ID_START
-       : ('a' .. 'z') | ('A' .. 'Z') | '_'
-       ;
-
-
-    fragment VALID_ID_CHAR
-       : VALID_ID_START | ('0' .. '9')
-       ;
-
-
-
 
 
 SCIENTIFIC_NUMBER
