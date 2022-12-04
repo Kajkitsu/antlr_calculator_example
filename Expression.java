@@ -45,10 +45,58 @@ public class Expression {
         return this.getLevel().equals(Level.ATOM);
     }
 
-    public Expression plus(Expression expression) {
-        return this.merge(BiOperator.PLUS, expression);
+    public Expression plus(Variable variable) {
+        if (getOperator().equals(BiOperator.PLUS)) {
+            Optional<Variable> optionalVariable = getVariable(variable);
+            if (optionalVariable.isEmpty()) {
+                return this.merge(BiOperator.PLUS, variable);
+            }
+            Expression newVariable = variable.plus(optionalVariable.get());
+            List<Expression> newExpressionList = new ArrayList<>(this.getExpressions());
+            newExpressionList.remove(variable);
+
+            if(newExpressionList.size() == 1) {
+                return newVariable.plus(newExpressionList.get(0));
+            }
+            return new Expression(BiOperator.PLUS, newExpressionList).plus(newVariable);
+        }
+        return this.merge(BiOperator.PLUS, variable);
     }
 
+    private Optional<Variable> getVariable(Variable variable) {
+        return expressionList.stream()
+                .filter(it -> it.equals(variable))
+                .map(it -> (Variable) it)
+                .findFirst();
+    }
+
+    public Expression plus(Number number) {
+        if (getOperator().equals(BiOperator.PLUS)) {
+            List<Number> numbers = getNumbers();
+            if (numbers.isEmpty()) {
+                return this.merge(BiOperator.PLUS,number);
+            }
+            List<Expression> newExpressionList = new ArrayList<>(getNotNumbers());
+            numbers
+                    .stream()
+                    .reduce(Number::plus)
+                    .map(it -> it.plus(number))
+                    .filter(it -> !it.equals(Number.getInsignificant(getOperator())))
+                    .ifPresent(newExpressionList::add);
+            if(newExpressionList.size() == 1) {
+                return newExpressionList.get(0);
+            }
+            return new Expression(this.getOperator(), newExpressionList);
+        }
+        return this.merge(BiOperator.PLUS, number);
+    }
+
+    public Expression plus(Expression expression) {
+        if(this.getOperator().equals(BiOperator.PLUS)) {
+            return this.join(expression);
+        }
+        return this.merge(BiOperator.PLUS, expression);
+    }
     public Expression minus(Expression expression) {
         return this.merge(BiOperator.MINUS, expression);
     }
@@ -81,6 +129,14 @@ public class Expression {
                 that
         );
     }
+
+
+    private Expression join(Expression expression) {
+        List<Expression> list = new ArrayList<>(this.getExpressions());
+        list.add(expression);
+        return new Expression(getOperator(), list);
+    }
+
 
     public static Expression simplifyAll(Expression expressionToSimplify) {
         Expression oldExpression;

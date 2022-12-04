@@ -60,5 +60,20 @@ public class ExpressionTest {
         assert expression.getValue().equals(21.0);
     }
 
+    @Test
+    public void test5() {
+        //given
+        var first = Variable.from('x');
+        var second = Number.from(2.0);
+        var third = Variable.from('x');
+        var forth = Number.from(4.0);
+        //then
+        var expression = first.plus(second).plus(third).plus(forth);
+        //expect
+        assert expression != null;
+        assert expression.getExpressions().get(0).equals(Variable.from('x').times(Number.TWO));
+        assert expression.getExpressions().get(1).equals(Number.from(6.0));
+    }
+
 
 }
