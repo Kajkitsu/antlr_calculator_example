@@ -1,3 +1,5 @@
+import java.util.function.BinaryOperator;
+
 public class Number extends Expression {
     public static final Number PI = Number.from(Math.PI);
     public static final Number E = Number.from(Math.E);
@@ -5,6 +7,8 @@ public class Number extends Expression {
     public static final String RPAREN = ")";
     public static final Number ZERO = Number.from(0.0);
     public static final Number ONE = Number.from(1.0);
+    public static final Number TWO = Number.from(2.0);
+    public static final Number MINUS_ONE = Number.from(-1.0);
 
     private final Double value;
 
@@ -13,9 +17,29 @@ public class Number extends Expression {
         this.value = value;
     }
 
+    public static BinaryOperator<Number> getMethod(BiOperator operator) {
+        return switch (operator) {
+            case DIV -> Number::div;
+            case MINUS -> Number::minus;
+            case PLUS -> Number::plus;
+            case TIMES -> Number::times;
+//            case POW -> Number::pow;
+            default -> throw new UnsupportedOperationException();
+        };
+    }
+
+    public static Number getInsignificant(BiOperator operator) {
+        return switch (operator) {
+            case PLUS -> Number.ZERO;
+            case TIMES -> Number.ONE;
+//            case POW -> Number::pow;
+            default -> throw new UnsupportedOperationException();
+        };
+    }
+
     @Override
-    public OperatorList getOperators() {
-        return OperatorList.emptyList();
+    public BiOperator getOperator() {
+        return BiOperator.ATOM;
     }
 
     @Override
@@ -24,96 +48,61 @@ public class Number extends Expression {
     }
 
     @Override
-    public Expression times(Expression that) {
-        if (that instanceof Number) {
-            return new Number(this.value * ((Number) that).value);
+    public Expression plus(Expression expression) {
+        if(expression instanceof Number) {
+            return this.plus((Number) expression);
         }
-        if(that.getLevel().equals(Level.MULTI_DIV) && that.getExpressions().get(0) instanceof Number firstNumber) {
-            var newFirstNumber = new Number(this.value * firstNumber.value);
-            if(newFirstNumber.equals(Number.ONE)) {
-                return that.withoutFirst();
-            }
-            return new Expression(
-                    that.getOperators(),
-                    that.getExpressions().withFirstAs(newFirstNumber)
-            );
-        }
-        return this.concat(Operator.TIMES, that);
+        return super.plus(expression);
+    }
+
+    public Number plus(Number number) {
+        return new Number(this.value + number.value);
     }
 
     @Override
-    public Expression div(Expression that) {
-        if (that instanceof Number) {
-            return new Number(this.value / ((Number) that).value);
+    public Expression minus(Expression expression) {
+        if(expression instanceof Number) {
+            return this.minus((Number) expression);
         }
-        if(that.getLevel().equals(Level.MULTI_DIV) && that.getExpressions().get(0) instanceof Number firstNumber) {
-            var newFirstNumber = new Number(this.value / firstNumber.value);
-            if(newFirstNumber.equals(Number.ONE)) {
-                return that.withoutFirst();
-            }
-            return new Expression(
-                    that.getOperators(),
-                    that.getExpressions().withFirstAs(newFirstNumber)
-            );
-        }
-        return this.concat(Operator.DIV, that);
+        return super.minus(expression);
+    }
+
+    public Number minus(Number number) {
+        return new Number(this.value - number.value);
     }
 
     @Override
-    public Expression plus(Expression that) {
-        if (that instanceof Number) {
-            return new Number(this.value + ((Number) that).value);
+    public Expression times(Expression expression) {
+        if(expression instanceof Number) {
+            return this.times((Number) expression);
         }
-        if(that.getLevel().equals(Level.ADD_SUB) && that.getExpressions().get(0) instanceof Number firstNumber) {
-            var newFirstNumber = new Number(this.value + firstNumber.value);
-            if(newFirstNumber.equals(Number.ZERO)) {
-                return that.withoutFirst();
-            }
-            return new Expression(
-                    that.getOperators(),
-                    that.getExpressions().withFirstAs(newFirstNumber)
-            );
+        return super.times(expression);
+    }
 
-        }
-        return this.concat(Operator.PLUS, that);
+    public Number times(Number number) {
+        return new Number(this.value * number.value);
     }
 
     @Override
-    public Expression minus(Expression that) {
-        if (that instanceof Number) {
-            return new Number(this.value - ((Number) that).value);
+    public Expression div(Expression expression) {
+        if(expression instanceof Number) {
+            return this.div((Number) expression);
         }
-        if(that.getLevel().equals(Level.ADD_SUB) && that.getExpressions().get(0) instanceof Number firstNumber) {
-            var newFirstNumber = new Number(this.value - firstNumber.value);
-            if(newFirstNumber.equals(Number.ZERO)) {
-                return that.withoutFirst();
-            }
-            return new Expression(
-                    that.getOperators(),
-                    that.getExpressions().withFirstAs(newFirstNumber)
-            );
-        }
-        return this.concat(Operator.DIV, that);
+        return super.div(expression);
     }
 
-    @Override
-    public Expression pow(Expression that) {
-        if (that instanceof Number) {
-            return new Number(this.value - ((Number) that).value);
-        }
-        return this.concat(Operator.DIV, that);
+    private Number div(Number number) {
+        return new Number(this.value / number.value);
     }
 
-    @Override
-    public Expression negative() {
-        return super.negative();
-    }
+//    public Operable pow(Number number) {
+//        return new Number(Math.pow(this.value, number.value));
+//    }
 
     @Override
-    Integer getLevel() {
+    public Integer getLevel() {
         return Level.ATOM;
     }
-
 
     public static Number from(double value) {
         return new Number(value);

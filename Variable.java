@@ -1,10 +1,7 @@
-import java.util.List;
-
 public class Variable extends Expression {
     private final Character value;
 
     public Variable(Character value) {
-        super();
         this.value = value;
     }
 
@@ -13,8 +10,8 @@ public class Variable extends Expression {
     }
 
     @Override
-    public OperatorList getOperators() {
-        return OperatorList.emptyList();
+    public BiOperator getOperator() {
+        return BiOperator.ATOM;
     }
 
     @Override
@@ -22,10 +19,40 @@ public class Variable extends Expression {
         return ExpressionList.of(this);
     }
 
+    @Override
+    public Integer getLevel() {
+        return Level.ATOM;
+    }
 
     @Override
-    Integer getLevel() {
-        return Level.ATOM;
+    public Expression plus(Expression that) {
+        if(this.equals(that)) {
+            return this.times(Number.TWO);
+        }
+        return super.plus(that);
+    }
+
+    @Override
+    public Expression times(Expression that) {
+        if(this.equals(that)) {
+            this.pow(Number.TWO);
+        }
+        return super.times(that);    }
+
+    @Override
+    public Expression div(Expression that) {
+        if(this.equals(that)) {
+            return Number.ONE;
+        }
+        return super.div(that);
+    }
+
+    @Override
+    public Expression minus(Expression that) {
+        if(this.equals(that)) {
+            return Number.ZERO;
+        }
+        return super.minus(that);
     }
 
     @Override

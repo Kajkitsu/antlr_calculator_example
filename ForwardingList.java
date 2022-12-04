@@ -3,6 +3,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 
 public class ForwardingList<T> implements List<T> {
     private final List<T> list;
@@ -155,5 +156,20 @@ public class ForwardingList<T> implements List<T> {
         var list = new ForwardingList<T>(this);
         list.remove(0);
         return list;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ForwardingList<?> that = (ForwardingList<?>) o;
+
+        return Objects.equals(list, that.list);
+    }
+
+    @Override
+    public int hashCode() {
+        return list != null ? list.hashCode() : 0;
     }
 }

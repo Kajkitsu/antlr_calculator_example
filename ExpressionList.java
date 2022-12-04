@@ -10,8 +10,8 @@ public class ExpressionList extends ForwardingList<Expression> {
         super(new ArrayList<>());
     }
 
-    public static ExpressionList of(Expression expression) {
-        return new ExpressionList(List.of(expression));
+    public static ExpressionList of(Expression operable) {
+        return new ExpressionList(List.of(operable));
     }
 
     public static ExpressionList emptyList() {
@@ -32,4 +32,7 @@ public class ExpressionList extends ForwardingList<Expression> {
                 .max(Integer::compareTo)
                 .orElse(0);
     }
+
+
+
 }

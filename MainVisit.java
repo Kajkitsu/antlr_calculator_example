@@ -20,23 +20,36 @@ public class MainVisit extends CalculatorBaseVisitor<Expression> {
         Expression leftExpression = Number.ZERO;
         System.out.println(leftExpression + ctx.relop().getText()//TODO
                 + rightExpression);
-        for (int i = 0; i < 5; i++) {
+        for(int i=0; i<5; i++) {
+            leftExpression = Expression.simplifyAll(leftExpression);
+            rightExpression = Expression.simplifyAll(rightExpression);
+            System.out.println(leftExpression + ctx.relop().getText()//TODO
+                    + rightExpression);
             var neutralizer = rightExpression.getNeutralizer();
-            if(neutralizer.isPresent()) {
-                System.out.println("Apply: "+neutralizer.get());
-                Operator operator = neutralizer.get().getOperator();
-                Number number = neutralizer.get().getNumber();
-                rightExpression = rightExpression.getMethod(operator).apply(number);
-                leftExpression = leftExpression.getMethod(operator).apply(number);
+            if (neutralizer.isPresent()) {
+                System.out.println("Apply: " + neutralizer.get());
+                BiOperator operator = neutralizer.get().operator();
+                Number number = neutralizer.get().number();
+                rightExpression = getMethod(rightExpression, operator).apply(number);
+                leftExpression = getMethod(leftExpression, operator).apply(number);
                 System.out.println(leftExpression + ctx.relop().getText()//TODO
                         + rightExpression);
             }
-
-
-
         }
+
         return leftExpression + ctx.relop().getText()//TODO
-             + rightExpression;
+                + rightExpression;
+    }
+
+    private Function<Expression, Expression> getMethod(Expression rightExpression, BiOperator operator) {
+        return switch (operator) {
+            case DIV -> rightExpression::div;
+            case MINUS -> rightExpression::minus;
+            case PLUS -> rightExpression::plus;
+            case TIMES -> rightExpression::times;
+            case POW -> rightExpression::pow;
+            default -> throw new UnsupportedOperationException();
+        };
     }
 
     @Override

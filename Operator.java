@@ -1,10 +1,6 @@
-
 public enum Operator {
-    TIMES("*", Level.MULTI_DIV),
-    PLUS("+", Level.ADD_SUB),
-    MINUS("-", Level.ADD_SUB),
-    DIV("/", Level.MULTI_DIV),
-    POW("^", Level.POW);
+    NEGATIVE("neg",Level.ATOM),
+    INVERSE("inv",Level.ATOM);
     private final String value;
     private final Integer level;
 
@@ -23,11 +19,9 @@ public enum Operator {
 
     public Operator getNeutralizer() {
         return switch (this) {
-            case TIMES -> DIV;
-            case PLUS -> MINUS;
-            case MINUS -> PLUS;
-            case DIV -> TIMES;
-            default -> throw new RuntimeException("Not implemented yet");
+            case NEGATIVE -> NEGATIVE;
+            case INVERSE -> INVERSE;
+            default -> throw new NotImplementedException();
         };
     }
 }
