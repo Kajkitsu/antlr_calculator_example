@@ -21,8 +21,6 @@ public class MainVisit extends CalculatorBaseVisitor<Expression> {
         System.out.println(leftExpression + ctx.relop().getText()//TODO
                 + rightExpression);
         for(int i=0; i<5; i++) {
-            leftExpression = Expression.simplifyAll(leftExpression);
-            rightExpression = Expression.simplifyAll(rightExpression);
             System.out.println(leftExpression + ctx.relop().getText()//TODO
                     + rightExpression);
             var neutralizer = rightExpression.getNeutralizer();

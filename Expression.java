@@ -1,35 +1,40 @@
+import com.sun.nio.file.ExtendedOpenOption;
+
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class Expression {
+public abstract class Expression {
+    abstract Expression concat(Expression that) ;
 
     private final BiOperator operator;
+
     private final ExpressionList expressionList;
 
-    private static Expression of(Expression left, BiOperator operator, Expression right) {
-        return new Expression(
-                operator,
-                ExpressionList.of(left, right)
-        );
-    }
-
-    private Expression(BiOperator operator, List<Expression> expressionList) {
+    Expression(BiOperator operator, ExpressionList expressionList) {
+        if(operator.equals(BiOperator.ATOM)) {
+            this.operator = BiOperator.ATOM;
+            this.expressionList = null;
+            return;
+        }
         if (expressionList.size() <= 1) {
             throw new IllegalArgumentException("ExpressionList is not valid!");
         }
+        if(operator.isNonOrdered()) {
+            for (Expression child: expressionList.stream().toList()) {
+                 if(child.operator.equals(operator)) {
+                     throw new IllegalArgumentException("Child contains unordered operator same as in parent");
+                 }
+            }
+        }
         this.operator = operator;
-        this.expressionList = ExpressionList.of(expressionList);
+        this.expressionList = expressionList;
     }
 
-    protected Expression() {
-        this.expressionList = null;
-        this.operator = null;
-    }
-
-    public BiOperator getOperator() {
+    public final BiOperator getOperator() {
         return operator;
     }
 
@@ -45,72 +50,58 @@ public class Expression {
         return this.getLevel().equals(Level.ATOM);
     }
 
-    public Expression plus(Variable variable) {
-        if (getOperator().equals(BiOperator.PLUS)) {
-            Optional<Variable> optionalVariable = getVariable(variable);
-            if (optionalVariable.isEmpty()) {
-                return this.merge(BiOperator.PLUS, variable);
-            }
-            Expression newVariable = variable.plus(optionalVariable.get());
-            List<Expression> newExpressionList = new ArrayList<>(this.getExpressions());
-            newExpressionList.remove(variable);
 
-            if(newExpressionList.size() == 1) {
-                return newVariable.plus(newExpressionList.get(0));
-            }
-            return new Expression(BiOperator.PLUS, newExpressionList).plus(newVariable);
+    public Expression minus(Expression that) {
+        if(this instanceof MinusExpression) {
+            return this.concat(that);
         }
-        return this.merge(BiOperator.PLUS, variable);
-    }
-
-    private Optional<Variable> getVariable(Variable variable) {
-        return expressionList.stream()
-                .filter(it -> it.equals(variable))
-                .map(it -> (Variable) it)
-                .findFirst();
-    }
-
-    public Expression plus(Number number) {
-        if (getOperator().equals(BiOperator.PLUS)) {
-            List<Number> numbers = getNumbers();
-            if (numbers.isEmpty()) {
-                return this.merge(BiOperator.PLUS,number);
-            }
-            List<Expression> newExpressionList = new ArrayList<>(getNotNumbers());
-            numbers
-                    .stream()
-                    .reduce(Number::plus)
-                    .map(it -> it.plus(number))
-                    .filter(it -> !it.equals(Number.getInsignificant(getOperator())))
-                    .ifPresent(newExpressionList::add);
-            if(newExpressionList.size() == 1) {
-                return newExpressionList.get(0);
-            }
-            return new Expression(this.getOperator(), newExpressionList);
+        if(this instanceof Number && that instanceof Number) {
+            return ((Number) this).minus((Number)that);
         }
-        return this.merge(BiOperator.PLUS, number);
+        return new MinusExpression(new ExpressionList(this, that));
     }
 
-    public Expression plus(Expression expression) {
-        if(this.getOperator().equals(BiOperator.PLUS)) {
-            return this.join(expression);
+    public Expression times(Expression that) {
+        if(this instanceof TimesExpression) {
+            return this.concat(that);
         }
-        return this.merge(BiOperator.PLUS, expression);
-    }
-    public Expression minus(Expression expression) {
-        return this.merge(BiOperator.MINUS, expression);
-    }
-
-    public Expression times(Expression expression) {
-        return this.merge(BiOperator.TIMES, expression);
-    }
-
-    public Expression div(Expression expression) {
-        return this.merge(BiOperator.DIV, expression);
+        if(that instanceof TimesExpression) {
+            return that.concat(this);
+        }
+        if(this instanceof Number && that instanceof Number) {
+            return ((Number) this).times((Number)that);
+        }
+        return new TimesExpression(new ExpressionList(this, that));
     }
 
-    public Expression pow(Expression expression) {
-        return this.merge(BiOperator.POW, expression);
+    public Expression plus(Expression that) {
+        if(this instanceof PlusExpression) {
+            return this.concat(that);
+        }
+        if(that instanceof PlusExpression) {
+            return that.concat(this);
+        }
+        if(this instanceof Number && that instanceof Number) {
+            return ((Number) this).plus((Number)that);
+        }
+        return new PlusExpression(new ExpressionList(this, that));
+    }
+
+    public Expression div(Expression that) {
+        if(this instanceof DivExpression) {
+            return this.concat(that);
+        }
+        if(this instanceof Number && that instanceof Number) {
+            return ((Number) this).div((Number)that);
+        }
+        return new DivExpression(new ExpressionList(this, that));
+    }
+
+    public Expression pow(Expression that) { //TODO
+        if(this instanceof Number && that instanceof Number) {
+            return ((Number) this).pow((Number)that);
+        }
+        return null;
     }
 
 
@@ -122,133 +113,7 @@ public class Expression {
         return Number.ONE.div(this);
     }
 
-    private Expression merge(BiOperator biOperator, Expression that) {
-        return Expression.of(
-                this,
-                biOperator,
-                that
-        );
-    }
 
-
-    private Expression join(Expression expression) {
-        List<Expression> list = new ArrayList<>(this.getExpressions());
-        list.add(expression);
-        return new Expression(getOperator(), list);
-    }
-
-
-    public static Expression simplifyAll(Expression expressionToSimplify) {
-        Expression oldExpression;
-        Expression expression = expressionToSimplify;
-        do {
-            oldExpression = expression;
-            expression = oldExpression.simplify();
-        } while (!(expression.equals(oldExpression)));
-        return expression.simplifyChilds();
-    }
-
-    private Expression simplifyChilds() {
-        if(this.isAtom()) {
-            return this;
-        }
-        List<Expression> newExpressionList = new ArrayList<>();
-        for (var child : expressionList) {
-            newExpressionList.add(Expression.simplifyAll(child));
-        }
-        return new Expression(this.getOperator(), newExpressionList);
-    }
-
-    private static Expression flatterAll(Expression expressionToFlatter) {
-        Expression oldExpression;
-        Expression expression = expressionToFlatter;
-        do {
-            oldExpression = expression;
-            expression = oldExpression.flatterNonOrdered();
-        } while (!(expression.equals(oldExpression)));
-        return expression;
-    }
-
-    private Expression simplifyMinus() {
-        List<Expression> newExpressionList = new ArrayList<>();
-        newExpressionList.add(expressionList.get(0));
-        for (var child : expressionList.subList(1, expressionList.size())) {
-            newExpressionList.add(Number.MINUS_ONE.times(child));
-        }
-        return new Expression(BiOperator.PLUS, newExpressionList);
-    }
-
-    private Expression simplifyDiv() {
-        List<Expression> newExpressionList = new ArrayList<>();
-        newExpressionList.add(expressionList.get(0));
-        for (var child : expressionList.subList(1, expressionList.size())) {
-            newExpressionList.add(Number.ONE.div(child));
-        }
-        return new Expression(BiOperator.TIMES, newExpressionList);
-    }
-
-    private Expression flatterNonOrdered() {
-        List<Expression> newExpressionList = new ArrayList<>();
-        for (var child : expressionList) {
-            if (this.getOperator().equals(child.getOperator())) {
-                newExpressionList.addAll(child.getExpressions());
-            } else {
-                newExpressionList.add(child);
-            }
-        }
-        return new Expression(this.getOperator(), newExpressionList);
-    }
-
-    private Expression simplify() {
-        if(this.isAtom()) {
-            return this;
-        }
-        if (this.getOperator().equals(BiOperator.MINUS)) {
-            return this.simplifyMinus();
-        }
-        if (this.getOperator().equals(BiOperator.DIV)) {
-            return this.simplifyDiv();
-        }
-        if (this.getOperator().equals(BiOperator.TIMES) || this.getOperator().equals(BiOperator.PLUS)) {
-            return flatterAll(this)
-                    .simplifyNonOrdered();
-        }
-
-        return this;
-    }
-
-    private Expression simplifyNonOrdered() {
-
-        List<Number> numbers = getNumbers();
-        if (numbers.isEmpty()) {
-            return this;
-        }
-        List<Expression> newExpressionList = new ArrayList<>(getNotNumbers());
-        numbers
-                .stream()
-                .reduce(Number.getMethod(getOperator()))
-                .filter(it -> !it.equals(Number.getInsignificant(getOperator())))
-                .ifPresent(newExpressionList::add);
-        if(newExpressionList.size() == 1) {
-            return newExpressionList.get(0);
-        }
-        return new Expression(this.getOperator(), newExpressionList);
-    }
-
-    private List<Expression> getNotNumbers() {
-        return this.getExpressions()
-                .stream()
-                .filter(it -> !(it instanceof Number))
-                .toList();
-    }
-
-    private List<Number> getNumbers() {
-        return this.getExpressions()
-                .stream()
-                .filter(it -> it instanceof Number)
-                .map(it -> (Number) it)
-                .toList();
-    }
 
     @Override
     public String toString() {
@@ -265,7 +130,12 @@ public class Expression {
         Expression that = (Expression) o;
 
         if (operator != that.operator) return false;
-        return Objects.equals(expressionList, that.expressionList);
+        if(operator.equals(BiOperator.TIMES) || operator.equals(BiOperator.PLUS)){
+            return Objects.equals(getExpressions().stream().sorted(Comparator.comparing(Expression::hashCode)).toList(),
+                    that.getExpressions().stream().sorted(Comparator.comparing(Expression::hashCode)).toList());
+        } else {
+            return Objects.equals(getExpressions(), that.getExpressions());
+        }
     }
 
     @Override
@@ -276,75 +146,11 @@ public class Expression {
     }
 
     public Optional<Neutralizer> getNeutralizer() {
-        return getNumbers()
+        return this.getExpressions()
+                .getNumbers()
                 .stream()
                 .findFirst()
                 .map(it -> new Neutralizer(it, getOperator().getNeutralizer()));
     }
-
-
-//    public Operable acos() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.acos(this.getValue()));
-//        }
-//        return Atom.from("acos" + LPAREN + this + RPAREN);
-//    }
-//
-//    public Operable asin() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.asin(this.getValue()));
-//        }
-//        return Atom.from("asin" + LPAREN + this + RPAREN);
-//    }
-//
-//    public Operable atan() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.atan(this.getValue()));
-//        }
-//        return Atom.from("atan" + LPAREN + this + RPAREN);
-//    }
-//
-//    public Operable cos() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.cos(this.getValue()));
-//        }
-//        return Atom.from("cos" + LPAREN + this + RPAREN);
-//    }
-//
-//    public Operable sin() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.sin(this.getValue()));
-//        }
-//        return Atom.from("sin" + LPAREN + this + RPAREN);
-//    }
-//
-//    public Operable tan() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.tan(this.getValue()));
-//        }
-//        return Atom.from("tan" + LPAREN + this + RPAREN);
-//    }
-//
-//    public Operable sqrt() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.sqrt(this.getValue()));
-//        }
-//        return Atom.from("sqrt" + LPAREN + this + RPAREN);
-//    }
-//
-//    public Operable log() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.log(this.getValue()));
-//        }
-//        return Atom.from("log" + LPAREN + this + RPAREN);
-//    }
-//
-//    public Operable log10() {
-//        if (isNumber()) {
-//            return Atom.fromValue(Math.log(this.getValue()));
-//        }
-//        return Atom.from("log10" + LPAREN + this + RPAREN);
-//    }
-
 
 }

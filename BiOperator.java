@@ -31,4 +31,8 @@ public enum BiOperator {
             default -> throw new RuntimeException("Not implemented yet");
         };
     }
+
+    public boolean isNonOrdered() {
+        return this.equals(BiOperator.PLUS) || this.equals(BiOperator.TIMES);
+    }
 }

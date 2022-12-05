@@ -13,7 +13,7 @@ public class Number extends Expression {
     private final Double value;
 
     public Number(Double value) {
-        super();
+        super(BiOperator.ATOM, null);
         this.value = value;
     }
 
@@ -38,62 +38,72 @@ public class Number extends Expression {
     }
 
     @Override
-    public BiOperator getOperator() {
-        return BiOperator.ATOM;
+    Expression concat(Expression that) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public ExpressionList getExpressions() {
-        return ExpressionList.of(this);
+        return new ExpressionList(this);
     }
 
-    @Override
-    public Expression plus(Expression expression) {
-        if(expression instanceof Number) {
-            return this.plus((Number) expression);
-        }
-        return super.plus(expression);
-    }
+//    @Override
+//    public Expression plus(Expression expression) {
+//        if(expression instanceof Number) {
+//            return this.plus((Number) expression);
+//        }
+//        return super.plus(expression);
+//    }
 
     public Number plus(Number number) {
         return new Number(this.value + number.value);
-    }
-
-    @Override
-    public Expression minus(Expression expression) {
-        if(expression instanceof Number) {
-            return this.minus((Number) expression);
-        }
-        return super.minus(expression);
     }
 
     public Number minus(Number number) {
         return new Number(this.value - number.value);
     }
 
-    @Override
-    public Expression times(Expression expression) {
-        if(expression instanceof Number) {
-            return this.times((Number) expression);
-        }
-        return super.times(expression);
-    }
-
     public Number times(Number number) {
         return new Number(this.value * number.value);
     }
 
-    @Override
-    public Expression div(Expression expression) {
-        if(expression instanceof Number) {
-            return this.div((Number) expression);
-        }
-        return super.div(expression);
-    }
-
-    private Number div(Number number) {
+    public Number div(Number number) {
         return new Number(this.value / number.value);
     }
+
+    public Number pow(Number number) {
+        return new Number(Math.pow(this.value, number.value));
+    }
+//
+//    @Override
+//    public Expression minus(Expression expression) {
+//        if(expression instanceof Number) {
+//            return this.minus((Number) expression);
+//        }
+//        return super.minus(expression);
+//    }
+
+
+
+//    @Override
+//    public Expression times(Expression expression) {
+//        if(expression instanceof Number) {
+//            return this.times((Number) expression);
+//        }
+//        return super.times(expression);
+//    }
+
+
+
+//    @Override
+//    public Expression div(Expression expression) {
+//        if(expression instanceof Number) {
+//            return this.div((Number) expression);
+//        }
+//        return super.div(expression);
+//    }
+
+
 
 //    public Operable pow(Number number) {
 //        return new Number(Math.pow(this.value, number.value));

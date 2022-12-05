@@ -2,6 +2,7 @@ public class Variable extends Expression {
     private final Character value;
 
     public Variable(Character value) {
+        super(BiOperator.ATOM, null);
         this.value = value;
     }
 
@@ -10,78 +11,19 @@ public class Variable extends Expression {
     }
 
     @Override
-    public BiOperator getOperator() {
-        return BiOperator.ATOM;
+    Expression concat(Expression that) {
+        throw new UnsupportedOperationException();
     }
+
 
     @Override
     public ExpressionList getExpressions() {
-        return ExpressionList.of(this);
+        return new ExpressionList(this);
     }
 
     @Override
     public Integer getLevel() {
         return Level.ATOM;
-    }
-
-    @Override
-    public Expression plus(Expression that) {
-        if (that instanceof Variable) {
-            return this.plus((Variable) that);
-        }
-        return super.plus(that);
-    }
-
-    public Expression plus(Variable that) {
-        if (this.equals(that)) {
-            return this.times(Number.TWO);
-        }
-        return super.plus(that);
-    }
-
-    @Override
-    public Expression times(Expression that) {
-        if (that instanceof Variable) {
-            return this.times((Variable) that);
-        }
-        return super.times(that);
-    }
-
-    public Expression times(Variable that) {
-        if (this.equals(that)) {
-            this.pow(Number.TWO);
-        }
-        return super.times(that);
-    }
-
-    @Override
-    public Expression div(Expression that) {
-        if (that instanceof Variable) {
-            return this.div((Variable) that);
-        }
-        return super.div(that);
-    }
-
-    public Expression div(Variable that) {
-        if (this.equals(that)) {
-            return Number.ONE;
-        }
-        return super.div(that);
-    }
-
-    @Override
-    public Expression minus(Expression that) {
-        if (that instanceof Variable) {
-            return this.minus((Variable) that);
-        }
-        return super.minus(that);
-    }
-
-    public Expression minus(Variable that) {
-        if (this.equals(that)) {
-            return Number.ZERO;
-        }
-        return super.minus(that);
     }
 
     @Override

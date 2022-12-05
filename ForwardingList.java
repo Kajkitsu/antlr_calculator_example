@@ -131,33 +131,6 @@ public class ForwardingList<T> implements List<T> {
         return list.subList(fromIndex, toIndex);
     }
 
-    public ForwardingList<T> concat(T element) {
-        var list = new ForwardingList<T>();
-        list.addAll(this);
-        list.add(element);
-        return list;
-    }
-
-    public ForwardingList<T> concat(ForwardingList<T> elementList) {
-        var list = new ForwardingList<T>();
-        list.addAll(this);
-        list.addAll(elementList);
-        return list;
-    }
-
-    public ForwardingList<T> withFirstAs(T value) {
-        var list = new ForwardingList<T>(this);
-        list.remove(0);
-        list.add(0, value);
-        return list;
-    }
-
-    public ForwardingList<T> withoutFirst() {
-        var list = new ForwardingList<T>(this);
-        list.remove(0);
-        return list;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

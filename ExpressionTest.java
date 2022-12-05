@@ -23,10 +23,10 @@ public class ExpressionTest {
         //then
         var expression = left.plus(right);
         //expect
-        assert expression.getExpressions().get(0) instanceof Number;
-        assert ((Number) expression.getExpressions().get(0)).getValue().equals(1.0);
-        assert expression.getExpressions().get(1) instanceof Variable;
-        assert ((Variable) expression.getExpressions().get(1)).getValue().equals('x');
+        assert expression.getExpressions().get(0).get() instanceof Number;
+        assert ((Number) expression.getExpressions().get(0).get()).getValue().equals(1.0);
+        assert expression.getExpressions().get(1).get() instanceof Variable;
+        assert ((Variable) expression.getExpressions().get(1).get()).getValue().equals('x');
         assert expression.getOperator().equals(BiOperator.PLUS);
     }
 
@@ -39,10 +39,10 @@ public class ExpressionTest {
         //then
         var expression = first.plus(second).plus(third);
         //expect
-        assert expression.getExpressions().get(0) instanceof Number;
-        assert ((Number) expression.getExpressions().get(0)).getValue().equals(2.0);
-        assert expression.getExpressions().get(1) instanceof Variable;
-        assert ((Variable) expression.getExpressions().get(1)).getValue().equals('x');
+        assert expression.getExpressions().get(0).get() instanceof Number;
+        assert ((Number) expression.getExpressions().get(0).get()).getValue().equals(2.0);
+        assert expression.getExpressions().get(1).get() instanceof Variable;
+        assert ((Variable) expression.getExpressions().get(1).get()).getValue().equals('x');
         assert expression.getOperator().equals(BiOperator.PLUS);
     }
 
@@ -71,8 +71,8 @@ public class ExpressionTest {
         var expression = first.plus(second).plus(third).plus(forth);
         //expect
         assert expression != null;
-        assert expression.getExpressions().get(0).equals(Variable.from('x').times(Number.TWO));
-        assert expression.getExpressions().get(1).equals(Number.from(6.0));
+        assert expression.getExpressions().get(0).get().equals(Variable.from('x').times(Number.TWO));
+        assert expression.getExpressions().get(1).get().equals(Number.from(6.0));
     }
 
 
